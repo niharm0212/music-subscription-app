@@ -2,18 +2,20 @@ const AWS = require("aws-sdk");
 const axios = require("axios");
 const fs = require("fs");
 
-AWS.config.update({ region: "us-east-1" });
+AWS.config.update({ region: "us-west-1" });
 
 const s3 = new AWS.S3();
 
-const songs = JSON.parse(fs.readFileSync("songs.json"));
+// ✅ FIX HERE
+const data = JSON.parse(fs.readFileSync("songs.json"));
+const songs = data.songs;
 
-const BUCKET = "your-bucket-name"; // change this
+const BUCKET = "music-images-nihar"; // ⚠️ change this
 
 async function uploadImages() {
   for (const song of songs) {
     try {
-      const response = await axios.get(song.image_url, {
+      const response = await axios.get(song.img_url, {
         responseType: "arraybuffer",
       });
 
@@ -30,7 +32,7 @@ async function uploadImages() {
 
       console.log("Uploaded:", key);
     } catch (err) {
-      console.error(err);
+      console.error("Error:", song.title, err.message);
     }
   }
 }
