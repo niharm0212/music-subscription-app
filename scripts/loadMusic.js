@@ -1,11 +1,14 @@
 const AWS = require("aws-sdk");
 const fs = require("fs");
 
-AWS.config.update({ region: "us-west-1" });
+// ✅ Your region
+AWS.config.update({ region: "us-east-1" });
 
 const dynamodb = new AWS.DynamoDB.DocumentClient();
 
-const songs = JSON.parse(fs.readFileSync("songs.json"));
+// ✅ Correct parsing
+const data = JSON.parse(fs.readFileSync("songs.json"));
+const songs = data.songs;
 
 async function loadSongs() {
   for (const song of songs) {
@@ -15,8 +18,8 @@ async function loadSongs() {
         artist: song.artist,
         title: song.title,
         album: song.album,
-        year: song.year,
-        image_url: song.image_url,
+        year: Number(song.year), // 🔥 convert to number
+        image_url: song.img_url, // 🔥 rename field
       },
     };
 
@@ -24,7 +27,7 @@ async function loadSongs() {
       await dynamodb.put(params).promise();
       console.log("Inserted:", song.title);
     } catch (err) {
-      console.error(err);
+      console.error("Error:", err);
     }
   }
 }
