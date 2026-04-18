@@ -10,7 +10,7 @@ const s3 = new AWS.S3();
 const data = JSON.parse(fs.readFileSync("songs.json"));
 const songs = data.songs;
 
-const BUCKET = "music-images-nihar"; // ⚠️ change this
+const BUCKET = "music-images-a2_arnav"; // ⚠️ change this
 
 async function uploadImages() {
   for (const song of songs) {
