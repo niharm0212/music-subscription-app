@@ -9,7 +9,7 @@ exports.getSongs = async (req, res, next) => {
 
     let params;
 
-    //Case 1: artist + year (LSI)
+    // Case 1: artist + year (LSI)
     if (artist && year) {
       params = {
         TableName: SONGS_TABLE,
@@ -20,7 +20,7 @@ exports.getSongs = async (req, res, next) => {
         },
         ExpressionAttributeValues: {
           ":a": artist,
-          ":y": year,
+          ":y": Number(year), // ✅ FIXED
         },
       };
 
@@ -28,7 +28,7 @@ exports.getSongs = async (req, res, next) => {
       return res.status(200).json(result.Items);
     }
 
-    //Case 2: artist only (main table)
+    // Case 2: artist only
     if (artist) {
       params = {
         TableName: SONGS_TABLE,
@@ -42,7 +42,7 @@ exports.getSongs = async (req, res, next) => {
       return res.status(200).json(result.Items);
     }
 
-    // 🔹 Case 3: album (GSI)
+    // Case 3: album (GSI)
     if (album) {
       params = {
         TableName: SONGS_TABLE,
@@ -57,14 +57,10 @@ exports.getSongs = async (req, res, next) => {
       return res.status(200).json(result.Items);
     }
 
-    // 🔹 Case 4: no filters → scan
-    const result = await dynamoDb
-      .scan({
-        TableName: SONGS_TABLE,
-      })
-      .promise();
-
-    res.status(200).json(result.Items || []);
+    // Case 4: no filters → scan
+    return res.status(400).json({
+      message: "Please provide artist or album filter",
+    });
   } catch (error) {
     next(error);
   }

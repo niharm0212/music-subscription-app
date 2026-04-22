@@ -1,0 +1,29 @@
+service: music-app
+
+provider:
+  name: aws
+  runtime: nodejs18.x
+  region: us-west-1
+
+  environment:
+    USERS_TABLE: login
+    SONGS_TABLE: music
+    SUBSCRIPTIONS_TABLE: subscriptions
+    S3_BUCKET_NAME: music-images-nihar
+
+  iam:
+    role:
+      statements:
+        - Effect: Allow
+          Action:
+            - dynamodb:*
+            - s3:*
+          Resource: "*"
+
+functions:
+  app:
+    handler: handler.handler
+    events:
+      - http:
+          path: /{proxy+}
+          method: ANY
