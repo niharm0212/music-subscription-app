@@ -1,0 +1,49 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Music Subscription Dashboard</title>
+    <link rel="stylesheet" href="../css/styles.css">
+</head>
+<body>
+    <header>
+        <h1>Welcome to Your Dashboard, <span id="userName">User</span></h1>
+        <nav>
+            <ul>
+                <li><a href="index.html">Home</a></li>
+                <li><a href="login.html" id="logoutBtn">Logout</a></li>
+            </ul>
+        </nav>
+    </header>
+
+    <main>
+        <section id="subscriptions">
+            <h2>Your Subscriptions</h2>
+            <div id="subscriptionList">
+                <!-- Subscribed music will be displayed here -->
+            </div>
+            <button id="unsubscribeBtn">Unsubscribe</button>
+        </section>
+
+        <section id="songs">
+            <h2>Search for Songs</h2>
+            <form id="songSearchForm">
+                <input type="text" id="songTitle" placeholder="Song Title" required>
+                <input type="text" id="artist" placeholder="Artist">
+                <input type="text" id="album" placeholder="Album">
+                <button type="submit">Search</button>
+            </form>
+            <div id="songResults">
+                <!-- Song search results will be displayed here -->
+            </div>
+        </section>
+    </main>
+
+    <footer>
+        <p>&copy; 2026 Music Subscription Service</p>
+    </footer>
+
+    <script src="../scripts/main.js"></script>
+</body>
+</html>
