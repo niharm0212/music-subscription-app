@@ -1,28 +1,279 @@
-<!DOCTYPE html>
-<html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+<!doctype html>
+<html>
+  <head>
     <title>Music Subscription</title>
-    <link rel="stylesheet" href="../css/index.css">
-</head>
-<body>
-    <header>
-        <h1>Welcome to Music Subscription Service</h1>
-        <nav>
-            <ul>
-                <li><a href="login.html">Login</a></li>
-                <li><a href="register.html">Register</a></li>
-            </ul>
-        </nav>
-    </header>
+    <style>
+      body {
+        font-family: Arial;
+      }
+      .hidden {
+        display: none;
+      }
+      img {
+        border-radius: 8px;
+        margin: 5px 0;
+      }
+    </style>
+  </head>
 
-    <main>
-        <h2>Get Started by Logging In or Registering</h2>
-    </main>
+  <body>
+    <h1>Music Subscription 🎵</h1>
 
-    <footer>
-        <p>&copy; 2026 Music Subscription Service</p>
-    </footer>
-</body>
+    <!-- HOME -->
+    <div id="home">
+      <button onclick="showLogin()">Login</button>
+      <button onclick="showRegister()">Register</button>
+    </div>
+
+    <!-- LOGIN -->
+    <div id="login" class="hidden">
+      <h2>Login</h2>
+      <form id="loginForm">
+        <input id="loginEmail" placeholder="Email" /><br /><br />
+        <input
+          id="loginPassword"
+          type="password"
+          placeholder="Password"
+        /><br /><br />
+        <button type="submit">Login</button>
+      </form>
+    </div>
+
+    <!-- REGISTER -->
+    <div id="register" class="hidden">
+      <h2>Register</h2>
+      <form id="registerForm">
+        <input id="name" placeholder="Name" /><br /><br />
+        <input id="email" placeholder="Email" /><br /><br />
+        <input
+          id="password"
+          type="password"
+          placeholder="Password"
+        /><br /><br />
+        <button type="submit">Register</button>
+      </form>
+    </div>
+
+    <!-- MAIN -->
+    <div id="main" class="hidden">
+      <h2>Welcome <span id="userName"></span></h2>
+      <button onclick="logout()">Logout</button>
+
+      <h3>Search Songs</h3>
+      <form id="songForm">
+        <input id="title" placeholder="Title" />
+        <input id="artist" placeholder="Artist" />
+        <input id="album" placeholder="Album" />
+        <input id="year" placeholder="Year" />
+        <button type="submit">Search</button>
+      </form>
+
+      <div id="results"></div>
+
+      <h3>Your Subscriptions</h3>
+      <div id="subscriptions"></div>
+    </div>
+
+    <script>
+      const BASE_URL =
+        "https://cqj3th6g52.execute-api.us-east-1.amazonaws.com/default";
+
+      let userEmail = localStorage.getItem("email");
+      let userName = localStorage.getItem("name");
+
+      // AUTO LOGIN
+      if (userEmail && userName) {
+        document.getElementById("userName").innerText = userName;
+        showMain();
+        loadSubscriptions();
+      }
+
+      // PAGE SWITCH
+      function showLogin() {
+        hideAll();
+        document.getElementById("login").classList.remove("hidden");
+      }
+      function showRegister() {
+        hideAll();
+        document.getElementById("register").classList.remove("hidden");
+      }
+      function showMain() {
+        hideAll();
+        document.getElementById("main").classList.remove("hidden");
+      }
+
+      function hideAll() {
+        ["home", "login", "register", "main"].forEach((id) => {
+          document.getElementById(id).classList.add("hidden");
+        });
+      }
+
+      // REGISTER
+      document
+        .getElementById("registerForm")
+        .addEventListener("submit", async (e) => {
+          e.preventDefault();
+
+          const res = await fetch(`${BASE_URL}/register`, {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({
+              name: name.value,
+              email: email.value,
+              password: password.value,
+            }),
+          });
+
+          const data = await res.json();
+
+          if (res.ok) {
+            alert("Registration successful");
+            showLogin();
+          } else {
+            alert(data.message || "Registration failed");
+          }
+        });
+
+      // LOGIN
+      document
+        .getElementById("loginForm")
+        .addEventListener("submit", async (e) => {
+          e.preventDefault();
+
+          const res = await fetch(`${BASE_URL}/login`, {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({
+              email: loginEmail.value,
+              password: loginPassword.value,
+            }),
+          });
+
+          const data = await res.json();
+
+          if (res.ok) {
+            localStorage.setItem("email", data.user.email);
+            localStorage.setItem("name", data.user.name);
+
+            userEmail = data.user.email;
+            userName = data.user.name;
+
+            document.getElementById("userName").innerText = userName;
+
+            showMain();
+            loadSubscriptions();
+          } else {
+            alert(data.message || "Login failed");
+          }
+        });
+
+      // SEARCH SONGS
+      document
+        .getElementById("songForm")
+        .addEventListener("submit", async (e) => {
+          e.preventDefault();
+
+          if (!title.value && !artist.value && !album.value && !year.value) {
+            alert("Enter at least one field");
+            return;
+          }
+
+          const res = await fetch(
+            `${BASE_URL}/songs?title=${title.value}&artist=${artist.value}&album=${album.value}&year=${year.value}`,
+          );
+          const data = await res.json();
+
+          const div = document.getElementById("results");
+          div.innerHTML = "";
+
+          if (!Array.isArray(data)) {
+            div.innerHTML = "<p>Error loading songs</p>";
+            console.log(data);
+            return;
+          }
+
+          if (data.length === 0) {
+            div.innerHTML = "<p>No result is retrieved</p>";
+            return;
+          }
+
+          data.forEach((song) => {
+            div.innerHTML += `
+      <div>
+        <img src="${song.image_url}" width="120"><br>
+        ${song.title} - ${song.artist}<br>
+        <button onclick="subscribe('${song.title}')">Subscribe</button>
+      </div>
+      <hr>
+    `;
+          });
+        });
+
+      // SUBSCRIBE
+      async function subscribe(title) {
+        const res = await fetch(`${BASE_URL}/subscribe`, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ email: userEmail, title }),
+        });
+
+        const data = await res.json();
+
+        if (!res.ok) {
+          alert(data.message || "Subscribe failed");
+          return;
+        }
+
+        loadSubscriptions();
+      }
+
+      // LOAD SUBSCRIPTIONS
+      async function loadSubscriptions() {
+        const res = await fetch(`${BASE_URL}/subscriptions?email=${userEmail}`);
+        const data = await res.json();
+
+        const div = document.getElementById("subscriptions");
+        div.innerHTML = "";
+
+        if (!Array.isArray(data)) {
+          div.innerHTML = "<p>Error loading subscriptions</p>";
+          console.log(data);
+          return;
+        }
+
+        if (data.length === 0) {
+          div.innerHTML = "<p>No subscriptions</p>";
+          return;
+        }
+
+        data.forEach((song) => {
+          div.innerHTML += `
+      <div>
+        <img src="${song.image_url}" width="120"><br>
+        ${song.title} - ${song.artist}<br>
+        <button onclick="unsubscribe('${song.title}')">Remove</button>
+      </div>
+      <hr>
+    `;
+        });
+      }
+
+      // UNSUBSCRIBE
+      async function unsubscribe(title) {
+        await fetch(`${BASE_URL}/subscribe`, {
+          method: "DELETE",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ email: userEmail, title }),
+        });
+
+        loadSubscriptions();
+      }
+
+      // LOGOUT
+      function logout() {
+        localStorage.clear();
+        location.reload();
+      }
+    </script>
+  </body>
 </html>

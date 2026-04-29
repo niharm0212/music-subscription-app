@@ -1,10 +1,37 @@
 const dynamoDb = require("../config/aws");
+const AWS = require("aws-sdk");
+
+const s3 = new AWS.S3({
+  region: "us-east-1",
+  signatureVersion: "v4",
+});
 
 const SONGS_TABLE = process.env.SONGS_TABLE || "music";
 const SUBSCRIPTIONS_TABLE = process.env.SUBSCRIPTIONS_TABLE || "subscriptions";
+const BUCKET = process.env.S3_BUCKET_NAME || "music-images-nihar";
+
+// Attach signed URLs
+function attachSignedUrls(items) {
+  return items.map((song) => {
+    if (!song.image_url) return song;
+
+    const key = song.image_url.split("/").pop();
+
+    const signedUrl = s3.getSignedUrl("getObject", {
+      Bucket: BUCKET,
+      Key: key,
+      Expires: 3600,
+    });
+
+    return {
+      ...song,
+      image_url: signedUrl,
+    };
+  });
+}
 
 // POST /subscribe
-exports.subscribe = async (req, res, next) => {
+const subscribe = async (req, res, next) => {
   try {
     const { email, title } = req.body;
 
@@ -12,15 +39,16 @@ exports.subscribe = async (req, res, next) => {
       throw new Error("Email and title are required");
     }
 
-    // Find song by title using GSI
-    const songResult = await dynamoDb.query({
-      TableName: SONGS_TABLE,
-      IndexName: "title-index",
-      KeyConditionExpression: "title = :title",
-      ExpressionAttributeValues: {
-        ":title": title,
-      },
-    }).promise();
+    const songResult = await dynamoDb
+      .query({
+        TableName: SONGS_TABLE,
+        IndexName: "title-index",
+        KeyConditionExpression: "title = :title",
+        ExpressionAttributeValues: {
+          ":title": title,
+        },
+      })
+      .promise();
 
     const song = songResult.Items && songResult.Items[0];
 
@@ -28,99 +56,78 @@ exports.subscribe = async (req, res, next) => {
       throw new Error("Song not found");
     }
 
-    // Check if already subscribed
-    const existing = await dynamoDb.get({
-      TableName: SUBSCRIPTIONS_TABLE,
-      Key: {
-        email,
-        title,
-      },
-    }).promise();
+    const existing = await dynamoDb
+      .get({
+        TableName: SUBSCRIPTIONS_TABLE,
+        Key: { email, title },
+      })
+      .promise();
 
     if (existing.Item) {
-      throw new Error("Already subscribed to this song");
+      throw new Error("Already subscribed");
     }
 
-    // Add subscription
-    const subscriptionItem = {
-      email,
-      title: song.title,
-      artist: song.artist,
-      album: song.album,
-      year: song.year,
-      image_url: song.image_url,
-    };
+    await dynamoDb
+      .put({
+        TableName: SUBSCRIPTIONS_TABLE,
+        Item: {
+          email,
+          title: song.title,
+          artist: song.artist,
+          album: song.album,
+          year: song.year,
+          image_url: song.image_url,
+        },
+      })
+      .promise();
 
-    await dynamoDb.put({
-      TableName: SUBSCRIPTIONS_TABLE,
-      Item: subscriptionItem,
-    }).promise();
-
-    res.status(201).json({
-      message: "Subscribed successfully",
-      subscription: subscriptionItem,
-    });
+    res.json({ message: "Subscribed successfully" });
   } catch (error) {
     next(error);
   }
 };
 
 // DELETE /subscribe
-exports.unsubscribe = async (req, res, next) => {
+const unsubscribe = async (req, res, next) => {
   try {
     const { email, title } = req.body;
 
-    if (!email || !title) {
-      throw new Error("Email and title are required");
-    }
+    await dynamoDb
+      .delete({
+        TableName: SUBSCRIPTIONS_TABLE,
+        Key: { email, title },
+      })
+      .promise();
 
-    const existing = await dynamoDb.get({
-      TableName: SUBSCRIPTIONS_TABLE,
-      Key: {
-        email,
-        title,
-      },
-    }).promise();
-
-    if (!existing.Item) {
-      throw new Error("Subscription not found");
-    }
-
-    await dynamoDb.delete({
-      TableName: SUBSCRIPTIONS_TABLE,
-      Key: {
-        email,
-        title,
-      },
-    }).promise();
-
-    res.status(200).json({
-      message: "Unsubscribed successfully",
-    });
+    res.json({ message: "Unsubscribed successfully" });
   } catch (error) {
     next(error);
   }
 };
 
-// GET /subscriptions?email=user1@gmail.com
-exports.getSubscriptions = async (req, res, next) => {
+// GET /subscriptions
+const getSubscriptions = async (req, res, next) => {
   try {
     const { email } = req.query;
 
-    if (!email) {
-      throw new Error("Email is required");
-    }
+    const result = await dynamoDb
+      .query({
+        TableName: SUBSCRIPTIONS_TABLE,
+        KeyConditionExpression: "email = :email",
+        ExpressionAttributeValues: {
+          ":email": email,
+        },
+      })
+      .promise();
 
-    const result = await dynamoDb.query({
-      TableName: SUBSCRIPTIONS_TABLE,
-      KeyConditionExpression: "email = :email",
-      ExpressionAttributeValues: {
-        ":email": email,
-      },
-    }).promise();
-
-    res.status(200).json(result.Items || []);
+    res.json(attachSignedUrls(result.Items));
   } catch (error) {
     next(error);
   }
+};
+
+module.exports = {
+  subscribe,
+  unsubscribe,
+  getSubscriptions,
 };
