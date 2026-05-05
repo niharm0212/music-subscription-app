@@ -11,5 +11,6 @@ router.get("/songs", songController.getSongs);
 router.post("/subscribe", subscriptionController.subscribe);
 router.delete("/subscribe", subscriptionController.unsubscribe);
 router.get("/subscriptions", subscriptionController.getSubscriptions);
+router.get("/songs/all", songController.getAllSongs);
 
 module.exports = router;

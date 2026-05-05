@@ -74,7 +74,23 @@ exports.getSongs = async (req, res, next) => {
 
     const result = await dynamoDb.query(params).promise();
 
-    res.json(attachSignedUrls(result.Items)); // 🔥 IMPORTANT
+    res.json(attachSignedUrls(result.Items));
+  } catch (error) {
+    next(error);
+  }
+};
+
+// GET /songs/all (Scan - fallback / demo purpose)
+exports.getAllSongs = async (req, res, next) => {
+  try {
+    const result = await dynamoDb
+      .scan({
+        TableName: SONGS_TABLE,
+        Limit: 20, // important: avoid full table scan explosion
+      })
+      .promise();
+
+    res.status(200).json(attachSignedUrls(result.Items));
   } catch (error) {
     next(error);
   }

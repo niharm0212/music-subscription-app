@@ -1,17 +1,119 @@
 <!doctype html>
 <html>
   <head>
-    <title>Music Subscription</title>
+    <meta charset="UTF-8" />
+    <title>Music Subscription 🎵</title>
+
     <style>
-      body {
-        font-family: Arial;
+      * {
+        margin: 0;
+        padding: 0;
+        box-sizing: border-box;
+        font-family: "Segoe UI", Tahoma, Geneva, Verdana, sans-serif;
       }
+
+      body {
+        min-height: 100vh;
+        background:
+          radial-gradient(
+            circle at top left,
+            rgba(29, 209, 161, 0.25),
+            transparent 35%
+          ),
+          linear-gradient(135deg, #0f2027, #203a43, #2c5364);
+        color: white;
+        display: flex;
+        flex-direction: column;
+      }
+
+      h1 {
+        text-align: center;
+        margin: 20px 0;
+        font-size: 42px;
+      }
+
+      .container {
+        flex: 1;
+        width: 100%;
+        max-width: 950px;
+        margin: auto;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+      }
+
+      #home,
+      #login,
+      #register,
+      #main {
+        width: 100%;
+        background: rgba(255, 255, 255, 0.12);
+        padding: 38px;
+        border-radius: 24px;
+        backdrop-filter: blur(14px);
+        box-shadow: 0 18px 45px rgba(0, 0, 0, 0.4);
+        text-align: center;
+        border: 1px solid rgba(255, 255, 255, 0.18);
+        margin-bottom: 20px;
+      }
+
       .hidden {
         display: none;
       }
+
+      h2 {
+        margin-bottom: 22px;
+      }
+
+      h3 {
+        margin: 30px 0 18px;
+        color: #1dd1a1;
+      }
+
+      input {
+        padding: 14px;
+        margin: 9px;
+        width: 220px;
+        border: none;
+        border-radius: 12px;
+        outline: none;
+      }
+
+      button {
+        padding: 13px 22px;
+        margin: 9px;
+        border: none;
+        border-radius: 999px;
+        background: linear-gradient(135deg, #1dd1a1, #10ac84);
+        color: white;
+        font-weight: bold;
+        cursor: pointer;
+      }
+
+      #results,
+      #subscriptions {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(190px, 1fr));
+        gap: 22px;
+        margin-top: 22px;
+      }
+
+      .card {
+        background: rgba(255, 255, 255, 0.16);
+        padding: 18px;
+        border-radius: 18px;
+      }
+
       img {
-        border-radius: 8px;
-        margin: 5px 0;
+        width: 125px;
+        height: 125px;
+        object-fit: cover;
+        border-radius: 16px;
+        margin-bottom: 12px;
+      }
+
+      #userName {
+        color: #1dd1a1;
       }
     </style>
   </head>
@@ -28,6 +130,8 @@
     <!-- LOGIN -->
     <div id="login" class="hidden">
       <h2>Login</h2>
+      <button onclick="goHome()">Home</button><br /><br />
+
       <form id="loginForm">
         <input id="loginEmail" placeholder="Email" /><br /><br />
         <input
@@ -42,6 +146,8 @@
     <!-- REGISTER -->
     <div id="register" class="hidden">
       <h2>Register</h2>
+      <button onclick="goHome()">Home</button><br /><br />
+
       <form id="registerForm">
         <input id="name" placeholder="Name" /><br /><br />
         <input id="email" placeholder="Email" /><br /><br />
@@ -81,6 +187,10 @@
       let userEmail = localStorage.getItem("email");
       let userName = localStorage.getItem("name");
 
+      function isValidEmail(email) {
+        return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email);
+      }
+
       // AUTO LOGIN
       if (userEmail && userName) {
         document.getElementById("userName").innerText = userName;
@@ -88,58 +198,82 @@
         loadSubscriptions();
       }
 
-      // PAGE SWITCH
       function showLogin() {
         hideAll();
-        document.getElementById("login").classList.remove("hidden");
+        login.classList.remove("hidden");
       }
+
       function showRegister() {
         hideAll();
-        document.getElementById("register").classList.remove("hidden");
+        register.classList.remove("hidden");
       }
+
       function showMain() {
         hideAll();
-        document.getElementById("main").classList.remove("hidden");
+        main.classList.remove("hidden");
+      }
+
+      function goHome() {
+        hideAll();
+        home.classList.remove("hidden");
       }
 
       function hideAll() {
-        ["home", "login", "register", "main"].forEach((id) => {
-          document.getElementById(id).classList.add("hidden");
-        });
+        ["home", "login", "register", "main"].forEach((id) =>
+          document.getElementById(id).classList.add("hidden"),
+        );
       }
 
       // REGISTER
-      document
-        .getElementById("registerForm")
-        .addEventListener("submit", async (e) => {
-          e.preventDefault();
+      registerForm.addEventListener("submit", async (e) => {
+        e.preventDefault();
 
+        const nameInput = document.getElementById("name");
+        const emailInput = document.getElementById("email");
+        const passwordInput = document.getElementById("password");
+
+        if (!nameInput.value.trim()) return alert("Name is required");
+        if (!emailInput.value.trim()) return alert("Email is required");
+        if (!passwordInput.value.trim()) return alert("Password is required");
+
+        if (!isValidEmail(emailInput.value))
+          return alert("Invalid email format (e.g. abc@gmail.com)");
+
+        try {
           const res = await fetch(`${BASE_URL}/register`, {
             method: "POST",
             headers: { "Content-Type": "application/json" },
             body: JSON.stringify({
-              name: name.value,
-              email: email.value,
-              password: password.value,
+              name: nameInput.value,
+              email: emailInput.value,
+              password: passwordInput.value,
             }),
           });
 
           const data = await res.json();
 
           if (res.ok) {
-            alert("Registration successful");
+            alert("Registered!");
             showLogin();
           } else {
-            alert(data.message || "Registration failed");
+            alert(data.message || "Register failed");
           }
-        });
-
+        } catch (err) {
+          console.error(err);
+          alert("Server error");
+        }
+      });
       // LOGIN
-      document
-        .getElementById("loginForm")
-        .addEventListener("submit", async (e) => {
-          e.preventDefault();
+      loginForm.addEventListener("submit", async (e) => {
+        e.preventDefault();
 
+        if (!loginEmail.value.trim()) return alert("Email is required");
+        if (!loginPassword.value.trim()) return alert("Password is required");
+
+        if (!isValidEmail(loginEmail.value))
+          return alert("Invalid email format");
+
+        try {
           const res = await fetch(`${BASE_URL}/login`, {
             method: "POST",
             headers: { "Content-Type": "application/json" },
@@ -162,117 +296,108 @@
 
             showMain();
             loadSubscriptions();
-          } else {
-            alert(data.message || "Login failed");
-          }
-        });
+          } else alert(data.message);
+        } catch {
+          alert("Login error");
+        }
+      });
 
-      // SEARCH SONGS
-      document
-        .getElementById("songForm")
-        .addEventListener("submit", async (e) => {
-          e.preventDefault();
+      // SEARCH
+      songForm.addEventListener("submit", async (e) => {
+        e.preventDefault();
 
-          if (!title.value && !artist.value && !album.value && !year.value) {
-            alert("Enter at least one field");
-            return;
-          }
+        if (!title.value && !artist.value && !album.value && !year.value)
+          return alert("Enter at least one field");
 
+        try {
           const res = await fetch(
             `${BASE_URL}/songs?title=${title.value}&artist=${artist.value}&album=${album.value}&year=${year.value}`,
           );
           const data = await res.json();
 
-          const div = document.getElementById("results");
-          div.innerHTML = "";
+          results.innerHTML = "";
 
-          if (!Array.isArray(data)) {
-            div.innerHTML = "<p>Error loading songs</p>";
-            console.log(data);
-            return;
-          }
-
-          if (data.length === 0) {
-            div.innerHTML = "<p>No result is retrieved</p>";
-            return;
-          }
+          if (!data.length) return (results.innerHTML = "<p>No result</p>");
 
           data.forEach((song) => {
-            div.innerHTML += `
-      <div>
-        <img src="${song.image_url}" width="120"><br>
-        ${song.title} - ${song.artist}<br>
-        <button onclick="subscribe('${song.title}')">Subscribe</button>
-      </div>
-      <hr>
-    `;
+            results.innerHTML += `
+        <div class="card">
+          <img src="${song.image_url}">
+          <p><b>${song.title}</b></p>
+          <p>${song.artist}</p>
+          <button onclick="subscribe('${song.title}')">Subscribe</button>
+        </div>`;
           });
-        });
+        } catch {
+          results.innerHTML = "<p>Error loading songs</p>";
+        }
+      });
 
       // SUBSCRIBE
       async function subscribe(title) {
-        const res = await fetch(`${BASE_URL}/subscribe`, {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ email: userEmail, title }),
-        });
+        try {
+          const res = await fetch(`${BASE_URL}/subscribe`, {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ email: userEmail, title }),
+          });
 
-        const data = await res.json();
+          const data = await res.json();
 
-        if (!res.ok) {
-          alert(data.message || "Subscribe failed");
-          return;
+          if (!res.ok) return alert(data.message);
+
+          loadSubscriptions();
+        } catch {
+          alert("Error subscribing");
         }
-
-        loadSubscriptions();
       }
 
       // LOAD SUBSCRIPTIONS
       async function loadSubscriptions() {
-        const res = await fetch(`${BASE_URL}/subscriptions?email=${userEmail}`);
-        const data = await res.json();
+        try {
+          const res = await fetch(
+            `${BASE_URL}/subscriptions?email=${userEmail}`,
+          );
+          const data = await res.json();
 
-        const div = document.getElementById("subscriptions");
-        div.innerHTML = "";
+          subscriptions.innerHTML = "";
 
-        if (!Array.isArray(data)) {
-          div.innerHTML = "<p>Error loading subscriptions</p>";
-          console.log(data);
-          return;
+          if (!data.length)
+            return (subscriptions.innerHTML = "<p>No subscriptions</p>");
+
+          data.forEach((song) => {
+            subscriptions.innerHTML += `
+        <div class="card">
+          <img src="${song.image_url}">
+          <p><b>${song.title}</b></p>
+          <p>${song.artist}</p>
+          <button onclick="unsubscribe('${song.title}')">Remove</button>
+        </div>`;
+          });
+        } catch {
+          subscriptions.innerHTML = "<p>Error loading</p>";
         }
-
-        if (data.length === 0) {
-          div.innerHTML = "<p>No subscriptions</p>";
-          return;
-        }
-
-        data.forEach((song) => {
-          div.innerHTML += `
-      <div>
-        <img src="${song.image_url}" width="120"><br>
-        ${song.title} - ${song.artist}<br>
-        <button onclick="unsubscribe('${song.title}')">Remove</button>
-      </div>
-      <hr>
-    `;
-        });
       }
 
       // UNSUBSCRIBE
       async function unsubscribe(title) {
-        await fetch(`${BASE_URL}/subscribe`, {
-          method: "DELETE",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ email: userEmail, title }),
-        });
+        try {
+          await fetch(`${BASE_URL}/subscribe`, {
+            method: "DELETE",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ email: userEmail, title }),
+          });
 
-        loadSubscriptions();
+          loadSubscriptions();
+        } catch {
+          alert("Error removing");
+        }
       }
 
       // LOGOUT
       function logout() {
         localStorage.clear();
-        location.reload();
+        showLogin();
       }
     </script>
   </body>
